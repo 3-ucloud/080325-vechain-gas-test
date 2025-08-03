@@ -17,7 +17,7 @@
       --border-radius: 8px;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
     body { 
       background: var(--bg-primary); 
@@ -44,6 +44,15 @@
       color: transparent;
     }
 
+    .info-banner {
+      background: var(--bg-tertiary);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      margin-bottom: 25px;
+      text-align: center;
+      border-left: 4px solid var(--success);
+    }
+
     .form-group {
       margin-bottom: 20px;
     }
@@ -65,27 +74,24 @@
       font-size: 16px;
     }
 
-    button {
-      width: 100%;
-      padding: 14px;
+    .btn {
       background: var(--accent);
       color: white;
       border: none;
+      padding: 14px;
       border-radius: var(--border-radius);
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.3s;
+      width: 100%;
+      margin: 10px 0;
     }
 
-    button:hover {
-      background: #5b94f0;
-    }
-
-    button:disabled {
-      background: #666;
-      cursor: not-allowed;
-    }
+    .btn:hover { background: #5b94f0; }
+    .btn:disabled { background: #666; cursor: not-allowed; }
+    .btn-success { background: var(--success); }
+    .btn-success:hover { background: #66bb6a; }
 
     .status {
       margin-top: 20px;
@@ -132,11 +138,30 @@
     .verify-btn:hover {
       background: #66bb6a;
     }
+
+    footer {
+      text-align: center;
+      padding: 30px 0 20px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📁 TrustSeal VeChain Notary</h1>
+    <h1>🌐 TrustSeal VeChain Notary</h1>
+    <p style="text-align: center; margin-bottom: 30px; color: var(--text-secondary);">
+      No wallet required - We pay all gas fees!
+    </p>
+    
+    <div class="info-banner">
+      <h3>🛡️ Secure Document Notarization</h3>
+      <p style="margin: 15px 0; color: var(--text-secondary);">
+        Your documents are processed securely<br>
+        <strong>All blockchain fees covered by us</strong><br>
+        Zero cryptocurrency wallet needed
+      </p>
+    </div>
     
     <div class="form-group">
       <label for="fileInput">📎 Select Document</label>
@@ -163,12 +188,19 @@
       <input type="email" id="email" placeholder="For notifications and verification">
     </div>
     
-    <button id="notarizeBtn">🔐 Notarize Document on VeChain</button>
+    <button class="btn" id="notarizeBtn">
+      🔐 Notarize Document (We Pay Gas Fees)
+    </button>
     
     <div class="status" id="status">
       <div class="status-message info">Select a document and click "Notarize Document"</div>
     </div>
   </div>
+
+  <footer>
+    <p>TrustSeal VeChain Notary - Completely wallet-free</p>
+    <p>We handle all blockchain fees - you just upload your documents</p>
+  </footer>
 
   <script>
     // DOM Elements
@@ -178,16 +210,16 @@
     const email = document.getElementById('email');
     const notarizeBtn = document.getElementById('notarizeBtn');
     const status = document.getElementById('status');
-
+    
     // State
     let currentFile = null;
-
+    
     // Event Listeners
     fileInput.addEventListener('change', function() {
       currentFile = this.files[0];
       fileName.textContent = currentFile ? currentFile.name : 'No file selected';
     });
-
+    
     // Show status message
     function showStatus(message, type = 'info') {
       const messageDiv = document.createElement('div');
@@ -196,11 +228,11 @@
       status.appendChild(messageDiv);
       status.scrollTop = status.scrollHeight;
     }
-
+    
     function clearStatus() {
       status.innerHTML = '';
     }
-
+    
     // Hash file using SHA-256
     async function hashFile(file) {
       const buffer = await file.arrayBuffer();
@@ -209,8 +241,8 @@
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
     }
-
-    // Notarize document
+    
+    // Notarize document (calls your backend with your credentials)
     async function notarizeDocument() {
       // Validation
       if (!currentFile) {
@@ -226,7 +258,7 @@
       
       // Disable button during processing
       notarizeBtn.disabled = true;
-      notarizeBtn.textContent = '🔄 Processing...';
+      notarizeBtn.textContent = '🔄 Processing Document...';
       
       clearStatus();
       showStatus(`📄 Processing: ${currentFile.name}`, 'info');
@@ -238,30 +270,45 @@
         const fileHash = await hashFile(currentFile);
         showStatus(`✅ Hash Generated: ${fileHash.substring(0, 32)}...`, 'success');
         
-        // Create FormData
+        // Show full hash
+        const hashDisplay = document.createElement('div');
+        hashDisplay.className = 'hash-display';
+        hashDisplay.innerHTML = `<strong>🆔 Document Hash:</strong><br>${fileHash}`;
+        status.appendChild(hashDisplay);
+        
+        showStatus('🌐 Submitting to VeChain blockchain...', 'info');
+        showStatus('💳 Processing payment (we cover all gas fees)...', 'info');
+        
+        // Call your backend API with your testnet credentials
         const formData = new FormData();
         formData.append('file', currentFile);
         formData.append('hash', fileHash);
         formData.append('email', emailValue);
         formData.append('serviceType', serviceType.value);
+        formData.append('fileName', currentFile.name);
+        formData.append('fileSize', currentFile.size);
+        formData.append('timestamp', new Date().toISOString());
         
-        showStatus('🌐 Submitting to VeChain blockchain...', 'info');
+        // IMPORTANT: Replace with your actual backend URL
+        const BACKEND_URL = 'https://your-backend-domain.com/api/notarize';
         
-        // Submit to backend
-        const response = await fetch('http://localhost:5000/api/notarize', {
+        const response = await fetch(BACKEND_URL, {
           method: 'POST',
           body: formData
         });
         
+        if (!response.ok) {
+          throw new Error(`Backend error: ${response.status} ${response.statusText}`);
+        }
+        
         const result = await response.json();
         
-        if (response.ok && result.success) {
+        if (result.success) {
           showStatus('🎉 Document Successfully Notarized!', 'success');
           showStatus(`🆔 Transaction ID: ${result.txId.substring(0, 32)}...`, 'success');
-          showStatus(`📄 File: ${result.fileName}`, 'info');
-          showStatus(`🆔 Hash: ${result.fileHash}`, 'info');
-          showStatus(`📧 Email: ${emailValue}`, 'info');
-          showStatus(`サービスタイプ: ${serviceType.value}`, 'info');
+          showStatus(`🕒 Timestamp: ${new Date(result.timestamp).toLocaleString()}`, 'info');
+          showStatus(`⛽ Gas Used: ${result.gasUsed} VTHO (covered by us)`, 'info');
+          showStatus(`📦 Block Number: ${result.blockNumber}`, 'info');
           
           // Show verification links
           const verificationDiv = document.createElement('div');
@@ -281,19 +328,20 @@
           status.appendChild(verificationDiv);
           
         } else {
-          showStatus(`❌ Notarization Failed: ${result.error || 'Unknown error'}`, 'error');
+          throw new Error(result.error || 'Unknown error from backend');
         }
         
       } catch (error) {
+        console.error('Notarization error:', error);
         showStatus(`❌ Error: ${error.message}`, 'error');
-        showStatus('💡 Make sure your backend server is running on port 5000', 'warning');
+        showStatus('💡 Please try again or contact support', 'warning');
       } finally {
         // Re-enable button
         notarizeBtn.disabled = false;
-        notarizeBtn.textContent = '🔐 Notarize Document on VeChain';
+        notarizeBtn.textContent = '🔐 Notarize Document (We Pay Gas Fees)';
       }
     }
-
+    
     // Copy hash to clipboard
     function copyHash(hash) {
       navigator.clipboard.writeText(hash).then(() => {
@@ -302,13 +350,13 @@
         showStatus('❌ Failed to copy hash', 'error');
       });
     }
-
+    
     // Event listener for notarize button
     notarizeBtn.addEventListener('click', notarizeDocument);
-
+    
     // Initialize
     showStatus('Ready to notarize your document on VeChain', 'info');
-    showStatus('🛡️ Files are processed locally - never leave your computer', 'warning');
+    showStatus('🛡️ Files are processed locally - never leave your browser', 'warning');
   </script>
 </body>
 </html>
