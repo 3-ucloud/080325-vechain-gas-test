@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TrustSeal VeChain Notary</title>
+  <style>
+    :root {
+      --bg-primary: #121212;
+      --bg-secondary: #1e1e1e;
+      --bg-tertiary: #2d2d2d;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0a0;
+      --accent: #4a86e8;
+      --success: #4caf50;
+      --warning: #ff9800;
+      --error: #f44336;
+      --border-radius: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+
+    body { 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      min-height: 100vh; 
+      padding: 20px; 
+    }
+
+    .container { 
+      max-width: 800px; 
+      margin: 0 auto; 
+      background: var(--bg-secondary); 
+      padding: 30px; 
+      border-radius: var(--border-radius); 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    h1 { 
+      text-align: center; 
+      margin-bottom: 30px; 
+      background: linear-gradient(90deg, var(--accent), #9c27b0);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid #444;
+      border-radius: var(--border-radius);
+      color: var(--text-primary);
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #5b94f0;
+    }
+
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--bg-tertiary);
+      border-radius: var(--border-radius);
+      min-height: 100px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .status-message {
+      margin: 10px 0;
+      padding: 8px;
+      border-radius: 4px;
+    }
+
+    .success { background: rgba(76, 175, 80, 0.2); color: var(--success); }
+    .error { background: rgba(244, 67, 54, 0.2); color: var(--error); }
+    .info { background: rgba(33, 150, 243, 0.2); color: var(--accent); }
+    .warning { background: rgba(255, 152, 0, 0.2); color: var(--warning); }
+
+    .hash-display {
+      background: var(--bg-tertiary);
+      padding: 10px;
+      border-radius: var(--border-radius);
+      font-family: monospace;
+      word-break: break-all;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+
+    .verification-links {
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .verify-btn {
+      background: var(--success);
+      margin: 5px;
+      display: inline-block;
+    }
+
+    .verify-btn:hover {
+      background: #66bb6a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📁 TrustSeal VeChain Notary</h1>
+    
+    <div class="form-group">
+      <label for="fileInput">📎 Select Document</label>
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt,.html,.js,.css">
+      <div id="fileName" style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;">
+        No file selected
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="serviceType">サービスタイプ</label>
+      <select id="serviceType">
+        <option value="Creative Proof">Creative Proof</option>
+        <option value="Car Accident">Car Accident</option>
+        <option value="Rental Contract">Rental Contract</option>
+        <option value="Personal Loan">Personal Loan</option>
+        <option value="Logistics POD">Logistics POD</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="email">📧 Your Email</label>
+      <input type="email" id="email" placeholder="For notifications and verification">
+    </div>
+    
+    <button id="notarizeBtn">🔐 Notarize Document on VeChain</button>
+    
+    <div class="status" id="status">
+      <div class="status-message info">Select a document and click "Notarize Document"</div>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const serviceType = document.getElementById('serviceType');
+    const email = document.getElementById('email');
+    const notarizeBtn = document.getElementById('notarizeBtn');
+    const status = document.getElementById('status');
+
+    // State
+    let currentFile = null;
+
+    // Event Listeners
+    fileInput.addEventListener('change', function() {
+      currentFile = this.files[0];
+      fileName.textContent = currentFile ? currentFile.name : 'No file selected';
+    });
+
+    // Show status message
+    function showStatus(message, type = 'info') {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `status-message ${type}`;
+      messageDiv.textContent = message;
+      status.appendChild(messageDiv);
+      status.scrollTop = status.scrollHeight;
+    }
+
+    function clearStatus() {
+      status.innerHTML = '';
+    }
+
+    // Hash file using SHA-256
+    async function hashFile(file) {
+      const buffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    // Notarize document
+    async function notarizeDocument() {
+      // Validation
+      if (!currentFile) {
+        showStatus('Please select a document first!', 'error');
+        return;
+      }
+      
+      const emailValue = email.value.trim();
+      if (!emailValue || !emailValue.includes('@')) {
+        showStatus('Please enter a valid email address!', 'error');
+        return;
+      }
+      
+      // Disable button during processing
+      notarizeBtn.disabled = true;
+      notarizeBtn.textContent = '🔄 Processing...';
+      
+      clearStatus();
+      showStatus(`📄 Processing: ${currentFile.name}`, 'info');
+      showStatus(`⚖️ Size: ${(currentFile.size/1024).toFixed(2)} KB`, 'info');
+      showStatus('🔑 Generating SHA-256 hash...', 'info');
+      
+      try {
+        // Generate file hash
+        const fileHash = await hashFile(currentFile);
+        showStatus(`✅ Hash Generated: ${fileHash.substring(0, 32)}...`, 'success');
+        
+        // Create FormData
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        formData.append('hash', fileHash);
+        formData.append('email', emailValue);
+        formData.append('serviceType', serviceType.value);
+        
+        showStatus('🌐 Submitting to VeChain blockchain...', 'info');
+        
+        // Submit to backend
+        const response = await fetch('http://localhost:5000/api/notarize', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          showStatus('🎉 Document Successfully Notarized!', 'success');
+          showStatus(`🆔 Transaction ID: ${result.txId.substring(0, 32)}...`, 'success');
+          showStatus(`📄 File: ${result.fileName}`, 'info');
+          showStatus(`🆔 Hash: ${result.fileHash}`, 'info');
+          showStatus(`📧 Email: ${emailValue}`, 'info');
+          showStatus(`サービスタイプ: ${serviceType.value}`, 'info');
+          
+          // Show verification links
+          const verificationDiv = document.createElement('div');
+          verificationDiv.className = 'verification-links';
+          verificationDiv.innerHTML = `
+            <div class="hash-display">
+              <strong>🔗 Verification Hash:</strong><br>
+              ${result.fileHash}
+            </div>
+            <button class="verify-btn" onclick="window.open('https://testnet.vechain.org/transactions/${result.txId}', '_blank')">
+              🌐 VeChain Testnet Explorer
+            </button>
+            <button class="verify-btn" onclick="copyHash('${result.fileHash}')">
+              📋 Copy Hash
+            </button>
+          `;
+          status.appendChild(verificationDiv);
+          
+        } else {
+          showStatus(`❌ Notarization Failed: ${result.error || 'Unknown error'}`, 'error');
+        }
+        
+      } catch (error) {
+        showStatus(`❌ Error: ${error.message}`, 'error');
+        showStatus('💡 Make sure your backend server is running on port 5000', 'warning');
+      } finally {
+        // Re-enable button
+        notarizeBtn.disabled = false;
+        notarizeBtn.textContent = '🔐 Notarize Document on VeChain';
+      }
+    }
+
+    // Copy hash to clipboard
+    function copyHash(hash) {
+      navigator.clipboard.writeText(hash).then(() => {
+        showStatus('📋 Hash copied to clipboard!', 'success');
+      }).catch(() => {
+        showStatus('❌ Failed to copy hash', 'error');
+      });
+    }
+
+    // Event listener for notarize button
+    notarizeBtn.addEventListener('click', notarizeDocument);
+
+    // Initialize
+    showStatus('Ready to notarize your document on VeChain', 'info');
+    showStatus('🛡️ Files are processed locally - never leave your computer', 'warning');
+  </script>
+</body>
+</html>
